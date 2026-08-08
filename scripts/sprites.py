@@ -21,7 +21,7 @@ class PhysicsSprite(Sprite):
         
         # movement & collision
         self.collision_sprites = collision_sprites 
-        self.gravity = 45 
+        self.gravity = 48 
         self.direction = pygame.Vector2()
         self.on_floor = False
         self.max_speed = speed
@@ -71,7 +71,7 @@ class PhysicsSprite(Sprite):
             if sprite.rect.colliderect(self.rect):
                 if direction == "horizontal":
                     if self.control_lock_timer <= 0:
-                        self.direction.y *= 0.75
+                        self.direction.y *= 0.8
                     if self.velocity_x > 0: 
                         self.rect.right = sprite.rect.left
                         self.on_wall_right = True

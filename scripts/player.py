@@ -17,12 +17,12 @@ class Player(PhysicsSprite):
         if just_pressed[pygame.K_UP]:
             self.jump()
 
-        if just_pressed[pygame.K_x]:
+        if just_pressed[pygame.K_x] and self.control_lock_timer <= 0:
             self.dash()
 
     def jump(self):
         if self.on_floor:
-            self.direction.y = -15
+            self.direction.y = -12
             self.on_floor = False
             print(f"on_floor={self.on_floor}, on_wall_left={self.on_wall_left}, on_wall_right={self.on_wall_right}") 
             return True
@@ -44,8 +44,8 @@ class Player(PhysicsSprite):
     def dash(self):
         if self.dash_timer <= 0:
             self.direction.y = 0 
-            self.dash_timer = 0.25
-            self.control_lock_timer = 0.25
+            self.dash_timer = 0.15
+            self.control_lock_timer = 0.30
             return True
 
     def update(self, dt):
