@@ -10,12 +10,15 @@ jump_surf = pygame.Surface((30,40))
 jump_surf.fill("blue")
 dash_surf = pygame.Surface((30,40))
 dash_surf.fill("green")
+wall_slide_surf = pygame.Surface((30,40))
+wall_slide_surf.fill("purple")
 
 PLAYER_ANIMATIONS = {
     "idle": [idle_surf],
     "run": [run_surf],
     "jump": [jump_surf],
     "dash": [dash_surf],
+    "wall_slide": [wall_slide_surf],
 }
 
 class Player(PhysicsSprite):
@@ -32,6 +35,9 @@ class Player(PhysicsSprite):
         if just_pressed[pygame.K_x] and self.control_lock_timer <= 0:
             self.dash()
 
+        if just_pressed[pygame.K_z]:
+            self.attack()
+
         if self.control_lock_timer <= 0:
             self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
 
@@ -44,13 +50,13 @@ class Player(PhysicsSprite):
             self.direction.y = -12
             self.direction.x = 1
             self.velocity_x = self.max_speed
-            self.control_lock_timer = 0.25  
+            self.control_lock_timer = 0.30  
             return True
         if self.on_wall_right:
             self.direction.y = -12
             self.direction.x = -1
             self.velocity_x = -self.max_speed
-            self.control_lock_timer = 0.25
+            self.control_lock_timer = 0.30
             return True
     
     def dash(self):
@@ -59,6 +65,9 @@ class Player(PhysicsSprite):
             self.dash_timer = 0.15
             self.control_lock_timer = 0.30
             return True
+    
+    def attack(self):
+        print("whoosh")
 
     def update(self, dt):
         self.control_lock_timer = max(0, self.control_lock_timer - dt)
@@ -66,7 +75,9 @@ class Player(PhysicsSprite):
         super().update(dt)
 
         # animation state
-        if not self.on_floor:
+        if self.on_wall_left or self.on_wall_right:
+            self.set_action("wall_slide")
+        elif not self.on_floor:
             self.set_action("jump")
         elif self.dash_timer > 0:
             self.set_action("dash")

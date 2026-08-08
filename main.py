@@ -6,7 +6,7 @@ FRAMERATE = 60
 
 from scripts.sprites import Sprite
 from scripts.player import Player
-from scripts.camera import Camera
+from scripts.enemies import Enemy
 
 
 class Game:
@@ -15,13 +15,13 @@ class Game:
         self.display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption(TITLE)
         self.clock = pygame.time.Clock()
-        self.running = True
-        self.camera = Camera()       
+        self.running = True     
 
         # grops
         self.all_sprites = pygame.sprite.Group()
         self.collision_sprites = pygame.sprite.Group()
-        
+        self.enemy_srpites = pygame.sprite.Group()
+
         # random block
         block_surf = pygame.Surface((WINDOW_WIDTH, 150))
         block_surf.fill("white")
@@ -38,7 +38,8 @@ class Game:
         block_surf_4 = pygame.Surface((450, 100))
         block_surf_4.fill("white")
         self.block_4 = Sprite((300, WINDOW_HEIGHT - 350), block_surf_4, (self.all_sprites, self.collision_sprites))
-
+        
+        self.enemy = Enemy((100, 300), (self.all_sprites, self.enemy_srpites), self.collision_sprites)
         self.player = Player((WINDOW_WIDTH/2, WINDOW_HEIGHT/2), self.all_sprites, self.collision_sprites)
 
     def handle_events(self):
@@ -50,8 +51,8 @@ class Game:
                     self.running = False
 
     def update(self, dt):
+        self.enemy_srpites.update(dt)
         self.player.update(dt)
-        self.camera.update(pygame.Vector2(), pygame.Vector2(), dt)
 
     def render(self):
         self.display_surface.fill("black")
