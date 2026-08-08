@@ -63,7 +63,7 @@ class Player(PhysicsSprite):
         if self.dash_timer <= 0:
             self.direction.y = 0 
             self.dash_timer = 0.15
-            self.control_lock_timer = 0.30
+            self.control_lock_timer = 0.14
             return True
     
     def attack(self):
@@ -75,12 +75,12 @@ class Player(PhysicsSprite):
         super().update(dt)
 
         # animation state
-        if self.on_wall_left or self.on_wall_right:
+        if self.dash_timer > 0:
+            self.set_action("dash")
+        elif self.on_wall_left or self.on_wall_right:
             self.set_action("wall_slide")
         elif not self.on_floor:
             self.set_action("jump")
-        elif self.dash_timer > 0:
-            self.set_action("dash")
         elif self.direction.x != 0:
             self.set_action("run")
         else:
