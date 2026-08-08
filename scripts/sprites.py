@@ -1,10 +1,7 @@
 import pygame
 
+from scripts.support import move_toward
 
-def move_toward(current, target, max_delta):
-    if abs(target - current) <= max_delta:
-        return target
-    return current + max_delta * (1 if target > current else -1)
 
 class Sprite(pygame.sprite.Sprite):
     def __init__(self, pos, surf, groups):
