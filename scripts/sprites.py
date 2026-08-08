@@ -34,9 +34,8 @@ class PhysicsSprite(Sprite):
         
         # player things i cant build otherwise lol
         self.dash_timer = 0
-        self.dash_speed = 1200
-        self.control_lock_timer = 0
-
+        self.dash_speed = 900
+        
     def move(self, dt):
         self.dash_timer = max(0, self.dash_timer - dt)
 
@@ -50,13 +49,6 @@ class PhysicsSprite(Sprite):
             if self.velocity_x > 0: self.flip = False
             if self.velocity_x < 0: self.flip = True
             self.rect.x += self.velocity_x * dt
-            #if self.direction.x != 0:
-            #    self.current_speed = min(self.current_speed + accel * dt, self.max_speed)
-            #else:
-            #    self.current_speed = max(self.current_speed - accel * dt, 0)
-            #if self.direction.x > 0: self.flip = False
-            #if self.direction.x < 0: self.flip = True
-            #self.rect.x += self.direction.x * self.current_speed * dt
         
         self.on_wall_left = False
         self.on_wall_right = False
@@ -73,8 +65,7 @@ class PhysicsSprite(Sprite):
         for sprite in self.collision_sprites:
             if sprite.rect.colliderect(self.rect):
                 if direction == "horizontal":
-                    if self.control_lock_timer <= 0:
-                        self.direction.y *= 0.8
+                    self.direction.y *= 0.8
                     if self.velocity_x > 0: 
                         self.rect.right = sprite.rect.left
                         self.on_wall_right = True
