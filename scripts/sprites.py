@@ -27,6 +27,7 @@ class PhysicsSprite(Sprite):
         self.gravity = 48 
         self.direction = pygame.Vector2()
         self.on_floor = False
+
         self.max_speed = speed
         self.velocity_x = 0
         self.floor_accel = 3000
@@ -36,6 +37,7 @@ class PhysicsSprite(Sprite):
         self.dash_timer = 0
         self.dash_speed = 900
         
+    # move this entire method to player and make a simpler method applying gravity and that's it
     def move(self, dt):
         self.dash_timer = max(0, self.dash_timer - dt)
 
