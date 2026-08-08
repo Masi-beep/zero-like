@@ -9,6 +9,9 @@ class Sprite(pygame.sprite.Sprite):
         self.image = surf
         self.rect = self.image.get_frect(topleft = pos)
 
+#    def draw(self, surf, offset=(0, 0)):
+#        surf.blit(self.image, (self.rect.x + offset[0], self.rect.y + offset[1]))
+
 
 class PhysicsSprite(Sprite):
     def __init__(self, pos, speed, animations, groups, collision_sprites):
@@ -94,7 +97,9 @@ class PhysicsSprite(Sprite):
         self.frame_index += self.animation_speed * dt
         self.image = frames[int(self.frame_index) % len(frames)]
 
-    # add a draw method that handles animations and camera offset
+#    def draw(self, surf, offset=(0, 0)):
+#        display_image = pygame.transform.flip(self.image, self.flip, False)
+#        surf.blit(display_image, (self.rect.x + offset[0], self.rect.y + offset[1]))
 
     def update(self, dt):
         self.move(dt)

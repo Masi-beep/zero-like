@@ -2,23 +2,38 @@ import pygame
 
 from scripts.sprites import PhysicsSprite
 
+idle_surf = pygame.Surface((30, 40))
+idle_surf.fill("red")
+run_surf = pygame.Surface((30,40))
+run_surf.fill("yellow")
+jump_surf = pygame.Surface((30,40))
+jump_surf.fill("blue")
+dash_surf = pygame.Surface((30,40))
+dash_surf.fill("green")
+
+PLAYER_ANIMATIONS = {
+    "idle": [idle_surf],
+    "run": [run_surf],
+    "jump": [jump_surf],
+    "dash": [dash_surf],
+}
 
 class Player(PhysicsSprite):
-    def __init__(self, pos, animations, groups, collision_sprites):
-        super().__init__(pos, 530, animations, groups, collision_sprites) 
+    def __init__(self, pos, groups, collision_sprites):
+        super().__init__(pos, 530, PLAYER_ANIMATIONS, groups, collision_sprites) 
 
     def input(self):
         keys = pygame.key.get_pressed()
         just_pressed = pygame.key.get_just_pressed()
-        
-        if self.control_lock_timer <= 0:
-            self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
-        
+
         if just_pressed[pygame.K_UP]:
             self.jump()
 
         if just_pressed[pygame.K_x] and self.control_lock_timer <= 0:
             self.dash()
+
+        if self.control_lock_timer <= 0:
+            self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
 
     def jump(self):
         if self.on_floor:
@@ -49,4 +64,15 @@ class Player(PhysicsSprite):
         self.control_lock_timer = max(0, self.control_lock_timer - dt)
         self.input()
         super().update(dt)
-        
+
+        # animation state
+        if not self.on_floor:
+            self.set_action("jump")
+        elif self.dash_timer > 0:
+            self.set_action("dash")
+        elif self.direction.x != 0:
+            self.set_action("run")
+        else:
+            self.set_action("idle")
+
+       
