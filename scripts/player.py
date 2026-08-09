@@ -39,31 +39,42 @@ class Player(AnimatedSprite):
         self.air_accel = 1500
         
         # timers
-        self.control_lock_timer = 0
+        self.x_move_timer = Timer(1000)
+        self.dash_duration = Timer(200)
+        self.dash_cooldown = Timer(400)
+        self.attack_cooldown = Timer(500)
 
     def input(self):
         keys = pygame.key.get_pressed()
         just_pressed = pygame.key.get_just_pressed()
 
-        if just_pressed[pygame.K_UP]:
+        if keys[pygame.K_UP]:
             self.jump()
 
-        if just_pressed[pygame.K_x]:
+        if just_pressed[pygame.K_x] and not self.dash_duration.active:
             self.dash()
 
-        if just_pressed[pygame.K_z]:
+        if keys[pygame.K_z] and not self.attack_cooldown.active:
             self.attack()
 
-        if self.control_lock_timer <= 0:
+        if not self.x_move_timer.active and not self.dash_duration.active:
             self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
-
+            
     def move(self, dt):
-        accel = self.floor_accel if self.on_floor else self.air_accel
-        target_velocity = self.direction.x * self.max_speed
-        self.velocity_x = move_toward(self.velocity_x, target_velocity, accel * dt)
-        if self.velocity_x > 0: self.flip = False
-        if self.velocity_x < 0: self.flip = True
-        self.rect.x += self.velocity_x * dt
+        if self.dash_duration.active:
+            self.direction.x = -1 if self.flip else 1
+            self.direction.y *= 0.50
+            self.velocity_x = self.direction.x * (self.max_speed * 1.7)
+            self.rect.x += self.velocity_x * dt
+        else:
+            accel = self.floor_accel if self.on_floor else self.air_accel
+            target_velocity = self.direction.x * self.max_speed
+            self.velocity_x = move_toward(self.velocity_x, target_velocity, accel * dt)
+
+            if self.velocity_x > 0: self.flip = False
+            if self.velocity_x < 0: self.flip = True 
+            
+            self.rect.x += self.velocity_x * dt
         
         self.on_wall_left = False
         self.on_wall_right = False
@@ -87,6 +98,7 @@ class Player(AnimatedSprite):
                     if self.velocity_x < 0: 
                         self.rect.left = sprite.rect.right
                         self.on_wall_left = True
+
                 elif direction == "vertical":
                     if self.direction.y > 0: self.rect.bottom = sprite.rect.top
                     self.on_floor = True
@@ -102,23 +114,31 @@ class Player(AnimatedSprite):
             self.direction.y = -12
             self.direction.x = 1
             self.velocity_x = self.max_speed
-            self.control_lock_timer = 0.30  
+            self.x_move_timer.activate()
             return True
         if self.on_wall_right:
             self.direction.y = -12
             self.direction.x = -1
             self.velocity_x = -self.max_speed
-            self.control_lock_timer = 0.30
+            self.x_move_timer.activate()
             return True
     
     def dash(self):
-        print("whee")
+        if not self.dash_cooldown.active:
+            self.dash_duration.activate()
+            self.dash_cooldown.activate()
+            return True
     
     def attack(self):
-        print("whoosh")
+        if not self.attack_cooldown.active:
+            self.attack_cooldown.activate()
+            print("whoosh") # create a hitbox sprite class
 
     def update(self, dt):
-        self.control_lock_timer = max(0, self.control_lock_timer - dt)
+        self.x_move_timer.update()
+        self.dash_duration.update()
+        self.dash_cooldown.update()
+        self.attack_cooldown.update()
         self.input()
         self.move(dt)
         super().update(dt)
@@ -126,6 +146,8 @@ class Player(AnimatedSprite):
         # animation state
         if self.on_floor and (self.on_wall_left or self.on_wall_right):
             self.set_action("idle")
+        elif self.dash_duration.active:
+            self.set_action("dash")
         elif self.on_wall_left or self.on_wall_right:
             self.set_action("wall_slide")
         elif not self.on_floor:
