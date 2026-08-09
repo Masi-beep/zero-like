@@ -39,8 +39,6 @@ class Player(AnimatedSprite):
         self.air_accel = 1500
         
         # timers
-        self.dash_timer = 0
-        self.dash_speed = 900
         self.control_lock_timer = 0
 
     def input(self):
@@ -50,7 +48,7 @@ class Player(AnimatedSprite):
         if just_pressed[pygame.K_UP]:
             self.jump()
 
-        if just_pressed[pygame.K_x] and self.dash_timer <= 0:
+        if just_pressed[pygame.K_x]:
             self.dash()
 
         if just_pressed[pygame.K_z]:
@@ -60,18 +58,12 @@ class Player(AnimatedSprite):
             self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
 
     def move(self, dt):
-        self.dash_timer = max(0, self.dash_timer - dt)
-
-        if self.dash_timer > 0:
-            self.direction.x = -1 if self.flip else 1
-            self.rect.x += self.direction.x * self.dash_speed * dt
-        else:
-            accel = self.floor_accel if self.on_floor else self.air_accel
-            target_velocity = self.direction.x * self.max_speed
-            self.velocity_x = move_toward(self.velocity_x, target_velocity, accel * dt)
-            if self.velocity_x > 0: self.flip = False
-            if self.velocity_x < 0: self.flip = True
-            self.rect.x += self.velocity_x * dt
+        accel = self.floor_accel if self.on_floor else self.air_accel
+        target_velocity = self.direction.x * self.max_speed
+        self.velocity_x = move_toward(self.velocity_x, target_velocity, accel * dt)
+        if self.velocity_x > 0: self.flip = False
+        if self.velocity_x < 0: self.flip = True
+        self.rect.x += self.velocity_x * dt
         
         self.on_wall_left = False
         self.on_wall_right = False
@@ -120,11 +112,7 @@ class Player(AnimatedSprite):
             return True
     
     def dash(self):
-        if self.dash_timer <= 0:
-            self.direction.y = 0 
-            self.dash_timer = 0.30
-            self.control_lock_timer = 0.14
-            return True
+        print("whee")
     
     def attack(self):
         print("whoosh")
@@ -136,9 +124,7 @@ class Player(AnimatedSprite):
         super().update(dt)
 
         # animation state
-        if self.dash_timer > 0:
-            self.set_action("dash")
-        elif self.on_floor and (self.on_wall_left or self.on_wall_right):
+        if self.on_floor and (self.on_wall_left or self.on_wall_right):
             self.set_action("idle")
         elif self.on_wall_left or self.on_wall_right:
             self.set_action("wall_slide")
