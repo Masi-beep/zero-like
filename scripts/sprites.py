@@ -13,14 +13,36 @@ class Sprite(pygame.sprite.Sprite):
 #        surf.blit(self.image, (self.rect.x + offset[0], self.rect.y + offset[1]))
 
 
-class PhysicsSprite(Sprite):
-    def __init__(self, pos, speed, animations, groups, collision_sprites):
+class AnimatedSprite(Sprite):
+    def __init__(self, pos, animations, groups):
         self.animations= animations
         self.action = "idle"
         self.frame_index = 0
-        self.animation_speed = 10
+        self.animation_speed = self.animations[self.action]["speed"]
         self.flip = False
-        super().__init__(pos, self.animations[self.action][self.frame_index], groups)
+        super().__init__(pos, self.animations[self.action]["frames"][self.frame_index], groups)
+
+    def set_action(self, action):
+        if action != self.action:
+            self.action = action
+            self.frame_index = 0
+            self.animation_speed = self.animations[self.action]["speed"]
+
+    def animate(self, dt):
+        frames = self.animations[self.action]["frames"]
+        self.frame_index += self.animation_speed * dt
+        self.image = frames[int(self.frame_index) % len(frames)]
+
+#    def draw(self, surf, offset=(0, 0)):
+#        display_image = pygame.transform.flip(self.image, self.flip, False)
+#        surf.blit(display_image, (self.rect.x + offset[0], self.rect.y + offset[1]))
+
+    def update(self, dt):
+        self.animate(dt)
+        
+
+class PhysicsSprite:
+    def __init__(self, pos, speed, groups, collision_sprites):
         
         # movement & collision
         self.collision_sprites = collision_sprites 
@@ -33,24 +55,14 @@ class PhysicsSprite(Sprite):
         self.floor_accel = 3000
         self.air_accel = 1500
         
-        # player things i cant build otherwise lol
-        self.dash_timer = 0
-        self.dash_speed = 900
-        
     # move this entire method to player and make a simpler method applying gravity and that's it
     def move(self, dt):
-        self.dash_timer = max(0, self.dash_timer - dt)
-
-        if self.dash_timer > 0:
-            self.direction.x = -1 if self.flip else 1
-            self.rect.x += self.direction.x * self.dash_speed * dt
-        else:
-            accel = self.floor_accel if self.on_floor else self.air_accel
-            target_velocity = self.direction.x * self.max_speed
-            self.velocity_x = move_toward(self.velocity_x, target_velocity, accel * dt)
-            if self.velocity_x > 0: self.flip = False
-            if self.velocity_x < 0: self.flip = True
-            self.rect.x += self.velocity_x * dt
+        accel = self.floor_accel if self.on_floor else self.air_accel
+        target_velocity = self.direction.x * self.max_speed
+        self.velocity_x = move_toward(self.velocity_x, target_velocity, accel * dt)
+        if self.velocity_x > 0: self.flip = False
+        if self.velocity_x < 0: self.flip = True
+        self.rect.x += self.velocity_x * dt
         
         self.on_wall_left = False
         self.on_wall_right = False
@@ -80,21 +92,6 @@ class PhysicsSprite(Sprite):
                     if self.direction.y < 0: self.rect.top = sprite.rect.bottom
                     self.direction.y = 0
     
-    def set_action(self, action):
-        if action != self.action:
-            self.action = action
-            self.frame_index = 0
-
-    def animate(self, dt):
-        frames = self.animations[self.action]
-        self.frame_index += self.animation_speed * dt
-        self.image = frames[int(self.frame_index) % len(frames)]
-
-#    def draw(self, surf, offset=(0, 0)):
-#        display_image = pygame.transform.flip(self.image, self.flip, False)
-#        surf.blit(display_image, (self.rect.x + offset[0], self.rect.y + offset[1]))
-
     def update(self, dt):
         self.move(dt)
-        self.animate(dt)
         

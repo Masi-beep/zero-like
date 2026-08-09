@@ -6,7 +6,6 @@ FRAMERATE = 60
 
 from scripts.sprites import Sprite
 from scripts.player import Player
-from scripts.enemies import Enemy
 
 
 class Game:
@@ -39,7 +38,6 @@ class Game:
         block_surf_4.fill("white")
         self.block_4 = Sprite((300, WINDOW_HEIGHT - 350), block_surf_4, (self.all_sprites, self.collision_sprites))
         
-        self.enemy = Enemy((100, 300), (self.all_sprites, self.enemy_srpites), self.collision_sprites)
         self.player = Player((WINDOW_WIDTH/2, WINDOW_HEIGHT/2), self.all_sprites, self.collision_sprites)
 
     def handle_events(self):
