@@ -1,7 +1,7 @@
 import pygame
 
 from scripts.support import move_toward
-from scripts.sprites import AnimatedSprite
+from scripts.sprites import Sprite, AnimatedSprite
 from scripts.timer import Timer
 
 idle_surf = pygame.Surface((30, 40))
@@ -23,6 +23,22 @@ PLAYER_ANIMATIONS = {
     "wall_slide": {"frames": [wall_slide_surf], "speed": 1},
 }
 
+
+class Hitbox(Sprite):
+    def __init__(self, pos, size, groups, player): # add enemies later
+        self.surf = pygame.Surface(size)
+        self.surf.fill((255,255,255))
+        self.surf.set_alpha(100)
+        super().__init__(pos, self.surf, groups)
+        self.player = player
+        self.duration = Timer(300, func=self.kill, autostart=True) 
+    
+    # kill enemy
+
+    def update(self, dt):
+        self.duration.update()
+
+
 class Player(AnimatedSprite):
     def __init__(self, pos, groups, collision_sprites):
         super().__init__(pos, PLAYER_ANIMATIONS, groups)
@@ -39,10 +55,10 @@ class Player(AnimatedSprite):
         self.air_accel = 1500
         
         # timers
-        self.x_move_timer = Timer(1000)
+        self.x_move_timer = Timer(300)
         self.dash_duration = Timer(200)
         self.dash_cooldown = Timer(400)
-        self.attack_cooldown = Timer(500)
+        self.attack_cooldown = Timer(750)
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -59,6 +75,18 @@ class Player(AnimatedSprite):
 
         if not self.x_move_timer.active and not self.dash_duration.active:
             self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
+
+    def aim_direction(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            return pygame.Vector2(0,-1)
+        if keys[pygame.K_DOWN]:
+            return pygame.Vector2(0,1)
+        if keys[pygame.K_RIGHT]:
+            return pygame.Vector2(1,0)
+        if keys[pygame.K_LEFT]:
+            return pygame.Vector2(-1,0)
+        return pygame.Vector2(-1,0) if self.flip else pygame.Vector2(1,0)
             
     def move(self, dt):
         if self.dash_duration.active:
@@ -132,7 +160,22 @@ class Player(AnimatedSprite):
     def attack(self):
         if not self.attack_cooldown.active:
             self.attack_cooldown.activate()
-            print("whoosh") # create a hitbox sprite class
+            aim = self.aim_direction()
+
+            if aim.x != 0:
+                size = (70,50)
+                self.attack_action = "attack"
+            elif aim.y < 0:
+                size = (50,70)
+                self.attack_action = "attack_up"
+            elif aim.y > 0:
+                size = (50,70)
+                self.attack_action = "attack_down"
+
+            offset = pygame.Vector2(aim.x * (self.rect.width / 2 + size[0] / 2), aim.y * (self.rect.height / 2 + size[1] / 2))
+            hitbox_center = pygame.Vector2(self.rect.center) + offset
+            hitbox_pos = (hitbox_center.x - size[0] / 2, hitbox_center.y - size[1] / 2)
+            Hitbox(hitbox_pos, size, self.groups(), self)
 
     def update(self, dt):
         self.x_move_timer.update()
@@ -144,6 +187,7 @@ class Player(AnimatedSprite):
         super().update(dt)
 
         # animation state
+        # first is going to be attack 
         if self.on_floor and (self.on_wall_left or self.on_wall_right):
             self.set_action("idle")
         elif self.dash_duration.active:

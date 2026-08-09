@@ -49,8 +49,7 @@ class Game:
                     self.running = False
 
     def update(self, dt):
-        self.enemy_srpites.update(dt)
-        self.player.update(dt)
+        self.all_sprites.update(dt)
 
     def render(self):
         self.display_surface.fill("black")
