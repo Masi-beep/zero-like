@@ -38,7 +38,7 @@ class Game:
         block_surf_4.fill("white")
         self.block_4 = Sprite((300, WINDOW_HEIGHT - 350), block_surf_4, (self.all_sprites, self.collision_sprites))
         
-        self.player = Player((WINDOW_WIDTH/2, WINDOW_HEIGHT/2), self.all_sprites, self.collision_sprites)
+        self.player = Player((WINDOW_WIDTH/2, 200), self.all_sprites, self.collision_sprites)
 
     def handle_events(self):
         for event in pygame.event.get():

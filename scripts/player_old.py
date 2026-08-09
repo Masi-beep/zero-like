@@ -47,23 +47,19 @@ class Player(AnimatedSprite):
         self.collision_sprites = collision_sprites 
         self.gravity = 48 
         self.direction = pygame.Vector2()
-        self.on_surface = {"floor": False, "left": False, "right": False}
+        self.on_floor = False
 
         self.max_speed = 530
         self.velocity_x = 0
         self.floor_accel = 3000
-        self.air_accel = 1500 
+        self.air_accel = 1500
         
         # timers
-        self.timers = {
-            "x_move": Timer(300),
-            "dash_duration": Timer(150),
-            "dash_cooldown": Timer(500),
-            "attack_cooldown": Timer(750),
-        }
+        self.x_move_timer = Timer(300)
+        self.dash_duration = Timer(200)
+        self.dash_cooldown = Timer(400)
+        self.attack_cooldown = Timer(750)
 
-        self.old_rect = self.rect.copy()
-        
     def input(self):
         keys = pygame.key.get_pressed()
         just_pressed = pygame.key.get_just_pressed()
@@ -71,13 +67,13 @@ class Player(AnimatedSprite):
         if just_pressed[pygame.K_UP]:
             self.jump()
 
-        if just_pressed[pygame.K_x] and not self.timers["dash_duration"].active:
+        if just_pressed[pygame.K_x] and not self.dash_duration.active:
             self.dash()
 
-        if keys[pygame.K_z] and not self.timers["attack_cooldown"].active:
+        if keys[pygame.K_z] and not self.attack_cooldown.active:
             self.attack()
 
-        if not self.timers["x_move"].active and not self.timers["dash_duration"].active:
+        if not self.x_move_timer.active and not self.dash_duration.active:
             self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
 
     def aim_direction(self):
@@ -93,15 +89,13 @@ class Player(AnimatedSprite):
         return pygame.Vector2(-1,0) if self.flip else pygame.Vector2(1,0)
             
     def move(self, dt):
-        if self.timers["dash_duration"].active:
-            #self.direction.x = -1 if self.flip else 1
-            self.direction.y = 0
-            if self.direction.x == 0: 
-                self.direction.x = -1 if self.flip else 1
-            self.velocity_x = self.direction.x * (self.max_speed * 1.5)
+        if self.dash_duration.active:
+            self.direction.x = -1 if self.flip else 1
+            self.direction.y *= 0.50
+            self.velocity_x = self.direction.x * (self.max_speed * 1.7)
             self.rect.x += self.velocity_x * dt
         else:
-            accel = self.floor_accel if self.on_surface["floor"] else self.air_accel
+            accel = self.floor_accel if self.on_floor else self.air_accel
             target_velocity = self.direction.x * self.max_speed
             self.velocity_x = move_toward(self.velocity_x, target_velocity, accel * dt)
 
@@ -110,73 +104,66 @@ class Player(AnimatedSprite):
             
             self.rect.x += self.velocity_x * dt
         
+        self.on_wall_left = False
+        self.on_wall_right = False
         self.collision("horizontal")
         
         # vertical velocity
+        self.on_floor = False
         self.direction.y += self.gravity * dt
         self.direction.y = min(self.direction.y, 500) # terminal velocity
         self.rect.y += self.direction.y
         self.collision("vertical")
 
-    def check_contact(self):
-        floor_rect = pygame.Rect(self.rect.bottomleft, (self.rect.width, 2))
-        right_rect = pygame.Rect(self.rect.topright + pygame.Vector2(0, self.rect.height / 4), (2, self.rect.height / 2))
-        left_rect = pygame.Rect(self.rect.topleft + pygame.Vector2(-2, self.rect.height / 4), (2, self.rect.height / 2))
-
-        collide_rects = [sprite.rect for sprite in self.collision_sprites]
-        self.on_surface["floor"] = floor_rect.collidelist(collide_rects) >= 0
-        self.on_surface["right"] = right_rect.collidelist(collide_rects) >= 0
-        self.on_surface["left"] = left_rect.collidelist(collide_rects) >= 0
-
-    def collision(self, axis):
+    def collision(self, direction):
         for sprite in self.collision_sprites:
             if sprite.rect.colliderect(self.rect):
-                if axis == "horizontal":
-                    if not self.on_surface["floor"] and (self.on_surface["left"] or self.on_surface["right"]) and self.direction.y > 0:
-                        self.direction.y *= 0.65
-                    if self.rect.left <= sprite.rect.right and self.old_rect.left >= sprite.rect.right:
+                if direction == "horizontal":
+                    self.direction.y *= 0.8
+                    if self.velocity_x > 0: 
+                        self.rect.right = sprite.rect.left
+                        self.on_wall_right = True
+                    if self.velocity_x < 0: 
                         self.rect.left = sprite.rect.right
-                    if self.rect.right >= sprite.rect.left and self.old_rect.right <= sprite.rect.left:
-                        self.rect.right = sprite.rect.left 
-                elif axis == "vertical":
-                    if self.direction.y > 0 and self.rect.bottom >= sprite.rect.top and self.old_rect.bottom <= sprite.rect.top:
+                        self.on_wall_left = True
+                    self.velocity_x = 0
+
+                elif direction == "vertical":
+                    if self.direction.y > 0: 
                         self.rect.bottom = sprite.rect.top
-                        self.direction.y = 0
-                    if self.direction.y < 0 and self.rect.top <= sprite.rect.bottom and self.old_rect.top >= sprite.rect.bottom:
+                        self.on_floor = True
+                    if self.direction.y < 0: 
                         self.rect.top = sprite.rect.bottom
-                        self.direction.y = 0
+                    self.direction.y = 0
 
     def jump(self):
-        if self.on_surface["floor"]:
+        if self.on_floor:
             self.direction.y = -12
+            self.on_floor = False 
             return True
-        if self.on_surface["left"]:
+        if self.on_wall_left:
             self.direction.y = -12
             self.direction.x = 1
             self.velocity_x = self.max_speed
-            self.timers["x_move"].activate()
+            self.x_move_timer.activate()
             return True
-        if self.on_surface["right"]:
+        if self.on_wall_right:
             self.direction.y = -12
             self.direction.x = -1
             self.velocity_x = -self.max_speed
-            self.timers["x_move"].activate()
+            self.x_move_timer.activate()
             return True
     
     def dash(self):
-        if not self.timers["dash_cooldown"].active:
-            self.timers["dash_duration"].activate()
-            self.timers["dash_cooldown"].activate()
+        if not self.dash_cooldown.active:
+            self.dash_duration.activate()
+            self.dash_cooldown.activate()
             return True
     
     def attack(self):
-        if not self.timers["attack_cooldown"].active:
-            self.timers["attack_cooldown"].activate()
+        if not self.attack_cooldown.active:
+            self.attack_cooldown.activate()
             aim = self.aim_direction()
-
-            if aim.y > 0 and self.on_surface["floor"]:
-                print("cant attack lmao")
-                return
 
             if aim.x != 0:
                 size = (70,50)
@@ -192,31 +179,28 @@ class Player(AnimatedSprite):
             hitbox_center = pygame.Vector2(self.rect.center) + offset
             hitbox_pos = (hitbox_center.x - size[0] / 2, hitbox_center.y - size[1] / 2)
             Hitbox(hitbox_pos, size, self.groups(), self)
-            return True
-    
-    def update_timers(self):
-        for timer in self.timers.values():
-            timer.update()
-    
+
     def update(self, dt):
-        self.old_rect = self.rect.copy()
-        self.update_timers()
+        self.x_move_timer.update()
+        self.dash_duration.update()
+        self.dash_cooldown.update()
+        self.attack_cooldown.update()
         self.input()
         self.move(dt)
-        self.check_contact()
         super().update(dt)
 
         # animation state
-        # first is going to be attack   
-        if self.on_surface["floor"] and (self.on_surface["left"] or self.on_surface["right"]):
+        # first is going to be attack 
+        if self.on_floor and (self.on_wall_left or self.on_wall_right):
             self.set_action("idle")
-        elif self.timers["dash_duration"].active:
+        elif self.dash_duration.active:
             self.set_action("dash")
-        elif self.on_surface["left"] or self.on_surface["right"]:
+        elif self.on_wall_left or self.on_wall_right:
             self.set_action("wall_slide")
-        elif not self.on_surface["floor"]:
+        elif not self.on_floor:
             self.set_action("jump")
         elif self.direction.x != 0:
-            self.set_action("run")
+            self.set_action("run") 
         else:
             self.set_action("idle")
+

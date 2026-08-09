@@ -8,6 +8,7 @@ class Sprite(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = surf
         self.rect = self.image.get_frect(topleft = pos)
+        self.old_rect = self.rect.copy()
 
 #    def draw(self, surf, offset=(0, 0)):
 #        surf.blit(self.image, (self.rect.x + offset[0], self.rect.y + offset[1]))
