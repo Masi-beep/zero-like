@@ -64,7 +64,7 @@ class Player(AnimatedSprite):
         keys = pygame.key.get_pressed()
         just_pressed = pygame.key.get_just_pressed()
 
-        if keys[pygame.K_UP]:
+        if just_pressed[pygame.K_UP]:
             self.jump()
 
         if just_pressed[pygame.K_x] and not self.dash_duration.active:
@@ -126,13 +126,16 @@ class Player(AnimatedSprite):
                     if self.velocity_x < 0: 
                         self.rect.left = sprite.rect.right
                         self.on_wall_left = True
+                    self.velocity_x = 0
 
                 elif direction == "vertical":
-                    if self.direction.y > 0: self.rect.bottom = sprite.rect.top
-                    self.on_floor = True
-                    if self.direction.y < 0: self.rect.top = sprite.rect.bottom
+                    if self.direction.y > 0: 
+                        self.rect.bottom = sprite.rect.top
+                        self.on_floor = True
+                    if self.direction.y < 0: 
+                        self.rect.top = sprite.rect.bottom
                     self.direction.y = 0
-    
+
     def jump(self):
         if self.on_floor:
             self.direction.y = -12
