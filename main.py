@@ -1,11 +1,10 @@
 import pygame
 
-WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
-TITLE = "zero like"
-FRAMERATE = 60
+from pytmx.util_pygame import load_pygame
+from os.path import join
 
-from scripts.sprites import Sprite
-from scripts.player import Player
+from scripts.settings import * 
+from scripts.level import Level
 
 
 class Game:
@@ -15,55 +14,23 @@ class Game:
         pygame.display.set_caption(TITLE)
         self.clock = pygame.time.Clock()
         self.running = True     
-
-        # grops
-        self.all_sprites = pygame.sprite.Group()
-        self.collision_sprites = pygame.sprite.Group()
-        self.enemy_srpites = pygame.sprite.Group()
-
-        # random block
-        block_surf = pygame.Surface((WINDOW_WIDTH, 150))
-        block_surf.fill("white")
-        self.block = Sprite((0, WINDOW_HEIGHT - 75), block_surf, (self.all_sprites, self.collision_sprites))
         
-        block_surf_2 = pygame.Surface((150, 450))
-        block_surf_2.fill("white")
-        self.block_2 = Sprite((WINDOW_WIDTH - 300, 100 ), block_surf_2, (self.all_sprites, self.collision_sprites))
-
-        block_surf_3 = pygame.Surface((150, WINDOW_HEIGHT))
-        block_surf_3.fill("white")
-        self.block_3 = Sprite((WINDOW_WIDTH - 10, 0), block_surf_3, (self.all_sprites, self.collision_sprites))
+        self.tmx_maps = {0: load_pygame(join("data","levels","test.tmx"))}
         
-        block_surf_4 = pygame.Surface((450, 100))
-        block_surf_4.fill("white")
-        self.block_4 = Sprite((300, WINDOW_HEIGHT - 350), block_surf_4, (self.all_sprites, self.collision_sprites))
-        
-        self.player = Player((WINDOW_WIDTH/2, 200), self.all_sprites, self.collision_sprites)
-
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.running = False
-
-    def update(self, dt):
-        self.all_sprites.update(dt)
-
-    def render(self):
-        self.display_surface.fill("black")
-        self.all_sprites.draw(self.display_surface)
+        self.current_stage = Level(self.tmx_maps[0])
 
     def run(self): 
         while self.running:
             dt = self.clock.tick(FRAMERATE) / 1000
             # events 
-            self.handle_events() 
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.running = False
             # update
-            self.update(dt)
-            # render
-            self.render()
+            self.current_stage.run(dt)
 
             pygame.display.update() 
         pygame.quit()
