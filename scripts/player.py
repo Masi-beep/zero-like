@@ -49,7 +49,7 @@ class Player(AnimatedSprite):
         self.direction = pygame.Vector2()
         self.on_surface = {"floor": False, "left": False, "right": False}
 
-        self.max_speed = 530
+        self.max_speed = 430
         self.velocity_x = 0
         self.floor_accel = 3000
         self.air_accel = 1500 
