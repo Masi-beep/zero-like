@@ -44,6 +44,7 @@ class Player(AnimatedSprite):
         super().__init__(pos, PLAYER_ANIMATIONS, groups)
         
         # movement & collision
+        self.hitbox_rect = self.rect.inflate(-1,-1)
         self.collision_sprites = collision_sprites 
         self.gravity = 48 
         self.direction = pygame.Vector2()
@@ -62,7 +63,7 @@ class Player(AnimatedSprite):
             "attack_cooldown": Timer(750),
         }
 
-        self.old_rect = self.rect.copy()
+        self.old_rect = self.hitbox_rect.copy()
         
     def input(self):
         keys = pygame.key.get_pressed()
@@ -99,7 +100,7 @@ class Player(AnimatedSprite):
             if self.direction.x == 0: 
                 self.direction.x = -1 if self.flip else 1
             self.velocity_x = self.direction.x * (self.max_speed * 1.5)
-            self.rect.x += self.velocity_x * dt
+            self.hitbox_rect.x += self.velocity_x * dt
         else:
             accel = self.floor_accel if self.on_surface["floor"] else self.air_accel
             target_velocity = self.direction.x * self.max_speed
@@ -108,20 +109,22 @@ class Player(AnimatedSprite):
             if self.velocity_x > 0: self.flip = False
             if self.velocity_x < 0: self.flip = True 
             
-            self.rect.x += self.velocity_x * dt
+            self.hitbox_rect.x += self.velocity_x * dt
         
         self.collision("horizontal")
         
         # vertical velocity
         self.direction.y += self.gravity * dt
         self.direction.y = min(self.direction.y, 500) # terminal velocity
-        self.rect.y += self.direction.y
+        self.hitbox_rect.y += self.direction.y
         self.collision("vertical")
+        
+        self.rect.center = self.hitbox_rect.center
 
     def check_contact(self):
-        floor_rect = pygame.Rect(self.rect.bottomleft, (self.rect.width, 2))
-        right_rect = pygame.Rect(self.rect.topright + pygame.Vector2(0, self.rect.height / 4), (2, self.rect.height / 2))
-        left_rect = pygame.Rect(self.rect.topleft + pygame.Vector2(-2, self.rect.height / 4), (2, self.rect.height / 2))
+        floor_rect = pygame.Rect(self.hitbox_rect.bottomleft, (self.hitbox_rect.width, 2))
+        right_rect = pygame.Rect(self.hitbox_rect.topright + pygame.Vector2(0, self.hitbox_rect.height / 4), (2, self.hitbox_rect.height / 2))
+        left_rect = pygame.Rect(self.hitbox_rect.topleft + pygame.Vector2(-2, self.hitbox_rect.height / 4), (2, self.hitbox_rect.height / 2))
 
         collide_rects = [sprite.rect for sprite in self.collision_sprites]
         self.on_surface["floor"] = floor_rect.collidelist(collide_rects) >= 0
@@ -130,20 +133,20 @@ class Player(AnimatedSprite):
 
     def collision(self, axis):
         for sprite in self.collision_sprites:
-            if sprite.rect.colliderect(self.rect):
+            if sprite.rect.colliderect(self.hitbox_rect):
                 if axis == "horizontal":
                     if not self.on_surface["floor"] and (self.on_surface["left"] or self.on_surface["right"]) and self.direction.y > 0:
                         self.direction.y *= 0.65
-                    if self.rect.left <= sprite.rect.right and self.old_rect.left >= sprite.rect.right:
-                        self.rect.left = sprite.rect.right
-                    if self.rect.right >= sprite.rect.left and self.old_rect.right <= sprite.rect.left:
-                        self.rect.right = sprite.rect.left 
+                    if self.hitbox_rect.left <= sprite.rect.right and self.old_rect.left >= sprite.rect.right:
+                        self.hitbox_rect.left = sprite.rect.right
+                    if self.hitbox_rect.right >= sprite.rect.left and self.old_rect.right <= sprite.rect.left:
+                        self.hitbox_rect.right = sprite.rect.left 
                 elif axis == "vertical":
-                    if self.direction.y > 0 and self.rect.bottom >= sprite.rect.top and self.old_rect.bottom <= sprite.rect.top:
-                        self.rect.bottom = sprite.rect.top
+                    if self.direction.y > 0 and self.hitbox_rect.bottom >= sprite.rect.top and self.old_rect.bottom <= sprite.rect.top:
+                        self.hitbox_rect.bottom = sprite.rect.top
                         self.direction.y = 0
-                    if self.direction.y < 0 and self.rect.top <= sprite.rect.bottom and self.old_rect.top >= sprite.rect.bottom:
-                        self.rect.top = sprite.rect.bottom
+                    if self.direction.y < 0 and self.hitbox_rect.top <= sprite.rect.bottom and self.old_rect.top >= sprite.rect.bottom:
+                        self.hitbox_rect.top = sprite.rect.bottom
                         self.direction.y = 0
 
     def jump(self):
@@ -188,8 +191,8 @@ class Player(AnimatedSprite):
                 size = (50,70)
                 self.attack_action = "attack_down"
 
-            offset = pygame.Vector2(aim.x * (self.rect.width / 2 + size[0] / 2), aim.y * (self.rect.height / 2 + size[1] / 2))
-            hitbox_center = pygame.Vector2(self.rect.center) + offset
+            offset = pygame.Vector2(aim.x * (self.hitbox_rect.width / 2 + size[0] / 2), aim.y * (self.hitbox_rect.height / 2 + size[1] / 2))
+            hitbox_center = pygame.Vector2(self.hitbox_rect.center) + offset
             hitbox_pos = (hitbox_center.x - size[0] / 2, hitbox_center.y - size[1] / 2)
             Hitbox(hitbox_pos, size, self.groups(), self)
             return True
@@ -199,7 +202,7 @@ class Player(AnimatedSprite):
             timer.update()
     
     def update(self, dt):
-        self.old_rect = self.rect.copy()
+        self.old_rect = self.hitbox_rect.copy()
         self.update_timers()
         self.input()
         self.move(dt)
